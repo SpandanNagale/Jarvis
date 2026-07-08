@@ -1,0 +1,66 @@
+# =============================================================================
+# JARVIS — .gitignore
+# =============================================================================
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+*.pyo
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+.env/
+ENV/
+
+# ── Distribution / packaging ──────────────────────────────────────────────────
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ── Large ML model files ──────────────────────────────────────────────────────
+# Piper TTS voice model (60 MB+) — download separately
+*.onnx
+*.onnx.json
+
+# ── Audio output files ────────────────────────────────────────────────────────
+# Generated at runtime by Piper TTS and STT
+*.wav
+*.mp3
+*.flac
+*.ogg
+
+# ── ChromaDB persistent memory ────────────────────────────────────────────────
+# User-specific memories; each user's will differ
+memory/
+
+# ── Environment / secrets ─────────────────────────────────────────────────────
+.env
+.env.*
+*.env
+
+# ── IDE / editor ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── OS generated ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Pytest / coverage ────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
