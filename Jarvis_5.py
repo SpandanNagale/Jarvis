@@ -1,23 +1,19 @@
 """
-Jarvis_5.py  —  Phase 7: Intelligence + Network Access
+Jarvis_5.py  —  Phase 7 + 8: Intelligence + Network + Screen Awareness
 =======================================================
 Extends Jarvis_4 with:
   • Qwen3:14b — native chain-of-thought thinking (replaces Qwen2.5:14b)
   • Adaptive thinking — complex questions get /think, simple commands skip it
   • Network tools: web_search, fetch_page, search_github, search_wikipedia
+  • Vision tools: analyze_screen, read_screen_text, analyze_region (qwen2.5vl:7b)
 
 New voice commands
 ------------------
-  "Hey Jarvis, search me on GitHub"          → search_github(query="SpandanNagale", kind="users")
-  "Hey Jarvis, find repos for LangChain"     → search_github(query="LangChain", kind="repositories")
-  "Hey Jarvis, what is RAG in AI?"           → search_wikipedia / reasons before answering
-  "Hey Jarvis, search for FastAPI tutorials" → web_search
-  "Hey Jarvis, fetch the page at github.com/SpandanNagale" → fetch_page
-
-Thinking mode
--------------
-  Simple commands (open app, set volume, what time is it) → /no_think, fast
-  Complex queries (explain this, what is X, search results analysis) → /think
+  "Hey Jarvis, search me on GitHub"
+  "Hey Jarvis, what is RAG in AI?"
+  "Hey Jarvis, what's on my screen?"
+  "Hey Jarvis, what does this error say?"
+  "Hey Jarvis, read what's in the terminal"
 
 Run:
     python Jarvis_5.py
@@ -70,6 +66,7 @@ from Jarvis_tools_memory import (
     save_messages,
 )
 from Jarvis_tools_network import NETWORK_TOOLS, NETWORK_TOOL_IMPLEMENTATIONS
+from Jarvis_tools_vision import VISION_TOOLS, VISION_TOOL_IMPLEMENTATIONS
 
 # ── Model ─────────────────────────────────────────────────────────────────────
 
@@ -77,12 +74,13 @@ MODEL = "qwen3:14b"   # upgrade from qwen2.5:14b — same VRAM, adds native thin
 
 # ── Tool registry ─────────────────────────────────────────────────────────────
 
-ALL_TOOLS = BASE_TOOLS + CODING_TOOLS + MEMORY_TOOLS + NETWORK_TOOLS
+ALL_TOOLS = BASE_TOOLS + CODING_TOOLS + MEMORY_TOOLS + NETWORK_TOOLS + VISION_TOOLS
 ALL_IMPLS = {
     **BASE_IMPLS,
     **CODING_TOOL_IMPLEMENTATIONS,
     **MEMORY_TOOL_IMPLEMENTATIONS,
     **NETWORK_TOOL_IMPLEMENTATIONS,
+    **VISION_TOOL_IMPLEMENTATIONS,
 }
 
 
@@ -108,7 +106,9 @@ _SIMPLE_PATTERNS = re.compile(
 _COMPLEX_PATTERNS = re.compile(
     r"(explain|why|how does|what is|what are|analyse|analyze|debug|diagnose"
     r"|refactor|suggest|compare|difference|search|find|look up|who is|tell me about"
-    r"|summarize|summarise|research|github|wikipedia)",
+    r"|summarize|summarise|research|github|wikipedia"
+    r"|screen|my screen|what.s on|what does this|read this|what.s happening"
+    r"|what.s wrong|error|terminal|window|showing|visible)",
     re.IGNORECASE,
 )
 

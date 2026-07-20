@@ -18,4 +18,5 @@ chromadb
 duckduckgo-search
 requests
 beautifulsoup4
+Pillow
 ddgs
