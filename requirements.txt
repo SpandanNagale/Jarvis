@@ -1,3 +1,17 @@
+# RTX 50-series (Blackwell) needs the cu128 wheel index for torch; older
+# wheels from plain PyPI have no sm_120 kernels and torch.cuda silently
+# won't work on this GPU. Pinned to 2.9.1 — 2.11.0+cu128 fails to load
+# c10_cuda.dll on this driver (DLL dependency resolves but a procedure in
+# it can't be found; a version regression, not a missing package).
+--extra-index-url https://download.pytorch.org/whl/cu128
+torch==2.9.1+cu128
+torchaudio==2.9.1+cu128
+# torchaudio>=2.9 needs torchcodec for its audio IO backend
+torchcodec
+# coqui-tts's XTTS code still imports transformers.pytorch_utils.isin_mps_friendly,
+# which transformers 5.x removed.
+transformers>=4.57,<5
+
 ollama
 psutil
 faster-whisper
@@ -6,6 +20,8 @@ soundfile
 numpy
 keyboard
 piper-tts
+coqui-tts
+PySide6
 nvidia-cublas-cu12
 nvidia-cudnn-cu12==9.*
 openwakeword

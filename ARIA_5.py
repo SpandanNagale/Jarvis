@@ -1,11 +1,20 @@
 """
-Jarvis_5.py  —  Phase 7 + 8: Intelligence + Network + Screen Awareness
+ARIA_5.py  —  Phase 7 + 8: Intelligence + Network + Screen Awareness
+                 + XTTS voice (ARIA_tts) + HUD overlay (ARIA_hud)
 =======================================================
-Extends Jarvis_4 with:
+Extends ARIA_4 with:
   • Qwen3:14b — native chain-of-thought thinking (replaces Qwen2.5:14b)
   • Adaptive thinking — complex questions get /think, simple commands skip it
   • Network tools: web_search, fetch_page, search_github, search_wikipedia
   • Vision tools: analyze_screen, read_screen_text, analyze_region (qwen2.5vl:7b)
+  • XTTS-v2 voice output (Piper fallback) — see ARIA_tts.py
+  • Always-on-top HUD overlay showing state + live transcript/reply — see
+    ARIA_hud.py. Qt owns the main thread, so the voice loop below runs on
+    a background thread; see __main__ at the bottom of this file.
+
+Wake word: still "hey jarvis" (see WAKE_WORD_MODEL_NAME below) — a custom
+"hey aria" openWakeWord model is being trained separately (see
+wakeword_training/); swap the constant once that model file exists.
 
 New voice commands
 ------------------
@@ -16,13 +25,14 @@ New voice commands
   "Hey Jarvis, read what's in the terminal"
 
 Run:
-    python Jarvis_5.py
+    python ARIA_5.py
 """
 
 import sys
 import os
 import re
 import atexit
+import threading
 
 if sys.platform == "win32":
     try:
@@ -46,31 +56,33 @@ if sys.platform == "win32":
 
 import numpy as np
 import sounddevice as sd
-import soundfile as sf
-import subprocess
 import keyboard
 import ollama
 from faster_whisper import WhisperModel
 from openwakeword.model import Model as WakeWordModel
 
-from Jarvis_1 import (
+from ARIA_1 import (
     TOOLS as BASE_TOOLS,
     TOOL_IMPLEMENTATIONS as BASE_IMPLS,
     to_assistant_message,
 )
-from Jarvis_tools_coding import CODING_TOOLS, CODING_TOOL_IMPLEMENTATIONS
-from Jarvis_tools_memory import (
+from ARIA_tools_coding import CODING_TOOLS, CODING_TOOL_IMPLEMENTATIONS
+from ARIA_tools_memory import (
     MEMORY_TOOLS,
     MEMORY_TOOL_IMPLEMENTATIONS,
     build_initial_messages,
     save_messages,
 )
-from Jarvis_tools_network import NETWORK_TOOLS, NETWORK_TOOL_IMPLEMENTATIONS
-from Jarvis_tools_vision import VISION_TOOLS, VISION_TOOL_IMPLEMENTATIONS
+from ARIA_tools_network import NETWORK_TOOLS, NETWORK_TOOL_IMPLEMENTATIONS
+from ARIA_tools_vision import VISION_TOOLS, VISION_TOOL_IMPLEMENTATIONS
+import ARIA_tts
+from ARIA_tts import speak
+import ARIA_hud
 
 # ── Model ─────────────────────────────────────────────────────────────────────
 
 MODEL = "qwen3:14b"   # upgrade from qwen2.5:14b — same VRAM, adds native thinking
+ARIA_tts.OLLAMA_MODEL = MODEL
 
 # ── Tool registry ─────────────────────────────────────────────────────────────
 
@@ -99,7 +111,7 @@ def run_tool_call(tool_call) -> str:
 
 _SIMPLE_PATTERNS = re.compile(
     r"^(open|close|set|lock|what time|what's the time|what is the time"
-    r"|what's my|volume|brightness|mute|unmute|list windows|hey jarvis)",
+    r"|what's my|volume|brightness|mute|unmute|list windows|hey jarvis|hey aria)",
     re.IGNORECASE,
 )
 
@@ -152,13 +164,15 @@ SPEECH_START_TIMEOUT_CHUNKS = 40
 MAX_SILENCE_CHUNKS       = 25
 MAX_COMMAND_CHUNKS       = 150
 
-PIPER_VOICE = "en_US-sam-medium"
-PIPER_OUT   = "jarvis_reply.wav"
+# Swap to "hey_aria" (and drop the trained model file in) once the custom
+# wake word model finishes training — see wakeword_training/.
+WAKE_WORD_MODEL_NAME = "hey_jarvis"
+WAKE_WORD_PHRASE     = "hey jarvis"
 
 # ── Model loading ─────────────────────────────────────────────────────────────
 
 print("Loading wake word model...")
-wake_model = WakeWordModel(wakeword_models=["hey_jarvis"])
+wake_model = WakeWordModel(wakeword_models=[WAKE_WORD_MODEL_NAME])
 
 print("Loading speech-to-text model...")
 stt_model = WhisperModel("large-v3-turbo", device="cuda", compute_type="float16")
@@ -172,35 +186,15 @@ def transcribe(audio_int16: np.ndarray) -> str:
     return " ".join(seg.text for seg in segments).strip()
 
 
-def speak(text: str):
-    try:
-        text = re.sub(r"[\ud800-\udfff]", "", text)
-        # Strip markdown-style formatting that sounds wrong spoken aloud
-        text = re.sub(r"\*+|`+|#+", "", text)
-        text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)   # [label](url) → label
-        safe = text.encode("ascii", errors="ignore").decode("ascii").strip()
-        if not safe:
-            print("[TTS] No speakable text, skipping.")
-            return
-        subprocess.run(
-            ["piper", "--model", PIPER_VOICE, "--output_file", PIPER_OUT],
-            input=safe.encode("utf-8"),
-            check=True,
-        )
-        data, sr = sf.read(PIPER_OUT, dtype="float32")
-        sd.play(data, sr)
-        sd.wait()
-    except Exception as e:
-        print(f"[TTS failed: {e}]")
-
-
-def record_command(stream) -> np.ndarray | None:
+def record_command(stream, on_chunk=None) -> np.ndarray | None:
     frames, silence_count, speech_started = [], 0, False
     for _ in range(MAX_COMMAND_CHUNKS):
         chunk, _ = stream.read(CHUNK)
         chunk = chunk.flatten()
         frames.append(chunk)
         rms = np.sqrt(np.mean(chunk.astype(np.float32) ** 2))
+        if on_chunk:
+            on_chunk(rms)
         if rms >= SILENCE_RMS:
             speech_started = True
             silence_count = 0
@@ -213,11 +207,14 @@ def record_command(stream) -> np.ndarray | None:
     return np.concatenate(frames) if speech_started else None
 
 
-def record_while_held(stream, key="space") -> np.ndarray | None:
+def record_while_held(stream, key="space", on_chunk=None) -> np.ndarray | None:
     frames = []
     while keyboard.is_pressed(key):
         chunk, _ = stream.read(CHUNK)
-        frames.append(chunk.flatten())
+        chunk = chunk.flatten()
+        frames.append(chunk)
+        if on_chunk:
+            on_chunk(np.sqrt(np.mean(chunk.astype(np.float32) ** 2)))
     return np.concatenate(frames) if frames else None
 
 
@@ -227,33 +224,40 @@ def chat_loop():
     messages = build_initial_messages()
     atexit.register(save_messages, messages)
 
-    print(f"\nJARVIS online (Phase 7 — {MODEL} with thinking + network).")
-    print("Say 'hey jarvis' or hold SPACE. Ctrl+C to quit.\n")
+    print(f"\nARIA online (Phase 7 — {MODEL} with thinking + network).")
+    print(f"Say '{WAKE_WORD_PHRASE}' or hold SPACE. Ctrl+C to quit.\n")
 
     stream = sd.InputStream(samplerate=SAMPLE_RATE, channels=1, dtype="int16", blocksize=CHUNK)
     stream.start()
 
+    def on_chunk(rms):
+        ARIA_hud.push(state="listening", rms=rms)
+
     try:
         while True:
+            ARIA_hud.push(state="idle")
+
             if keyboard.is_pressed("space"):
                 print("\nSpacebar held — listening...")
-                command_audio = record_while_held(stream)
+                command_audio = record_while_held(stream, on_chunk=on_chunk)
             else:
                 chunk, _ = stream.read(CHUNK)
-                score = wake_model.predict(chunk.flatten()).get("hey_jarvis", 0)
+                score = wake_model.predict(chunk.flatten()).get(WAKE_WORD_MODEL_NAME, 0)
                 if score <= WAKE_THRESHOLD:
                     continue
                 print("\nWake word detected — listening...")
-                command_audio = record_command(stream)
+                command_audio = record_command(stream, on_chunk=on_chunk)
 
             if command_audio is None or len(command_audio) < SAMPLE_RATE * 0.3:
                 print("Didn't catch anything, still listening.")
                 continue
 
+            ARIA_hud.push(state="thinking")
             user_text = transcribe(command_audio)
             if not user_text:
                 continue
             print(f"You said: {user_text}")
+            ARIA_hud.push(transcript=user_text, reply="")
 
             # Decide whether to think
             thinking = should_think(user_text)
@@ -282,7 +286,8 @@ def chat_loop():
 
             # Strip internal reasoning before displaying / speaking
             reply = strip_think_block(msg.get("content", ""))
-            print(f"JARVIS: {reply}")
+            print(f"ARIA: {reply}")
+            ARIA_hud.push(state="speaking", reply=reply)
 
             stream.stop()
             speak(reply)
@@ -298,4 +303,6 @@ def chat_loop():
 
 
 if __name__ == "__main__":
-    chat_loop()
+    app = ARIA_hud.start_hud()
+    threading.Thread(target=chat_loop, daemon=True).start()
+    sys.exit(app.exec())

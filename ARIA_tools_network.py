@@ -1,5 +1,5 @@
 """
-Jarvis_tools_network.py  —  Phase 7: Intelligence + Network Access
+ARIA_tools_network.py  —  Phase 7: Intelligence + Network Access
 
 Tools:
     web_search(query)              — DuckDuckGo search (no API key needed)
@@ -67,7 +67,7 @@ def fetch_page(url: str) -> str:
     if not url.startswith("http"):
         url = "https://" + url
     try:
-        resp = requests.get(url, timeout=10, headers={"User-Agent": "JARVIS/1.0"})
+        resp = requests.get(url, timeout=10, headers={"User-Agent": "ARIA/1.0"})
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
         # Remove noise
@@ -145,7 +145,7 @@ def search_wikipedia(query: str) -> str:
         return "Please provide a topic to look up."
     try:
         url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{requests.utils.quote(query)}"
-        resp = requests.get(url, timeout=10, headers={"User-Agent": "JARVIS/1.0"})
+        resp = requests.get(url, timeout=10, headers={"User-Agent": "ARIA/1.0"})
         if resp.status_code == 404:
             # Try a search instead
             search_url = "https://en.wikipedia.org/w/api.php"
@@ -158,7 +158,7 @@ def search_wikipedia(query: str) -> str:
                 # Re-try summary with the first result's title
                 title = results[1][0]
                 url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{requests.utils.quote(title)}"
-                resp = requests.get(url, timeout=10, headers={"User-Agent": "JARVIS/1.0"})
+                resp = requests.get(url, timeout=10, headers={"User-Agent": "ARIA/1.0"})
             else:
                 return f"No Wikipedia article found for '{query}'."
         resp.raise_for_status()

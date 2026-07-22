@@ -29,7 +29,7 @@ import ollama
 from faster_whisper import WhisperModel
 from openwakeword.model import Model as WakeWordModel
 
-from Jarvis_1 import TOOLS, run_tool_call, to_assistant_message, SYSTEM_PROMPT, MODEL
+from ARIA_1 import TOOLS, run_tool_call, to_assistant_message, SYSTEM_PROMPT, MODEL
 
 SAMPLE_RATE = 16000
 CHUNK = 1280              # 80ms — openWakeWord requires exactly this frame size
@@ -40,7 +40,7 @@ MAX_SILENCE_CHUNKS = 25   # ~2s of quiet ends the command, once you've started
 MAX_COMMAND_CHUNKS = 150  # ~12s hard cap so it can't listen forever
 
 PIPER_VOICE = "en_US-sam-medium"   # match whatever you downloaded
-PIPER_OUT = "jarvis_reply.wav"
+PIPER_OUT = "aria_reply.wav"
 
 print("Loading wake word model...")
 wake_model = WakeWordModel(wakeword_models=["hey_jarvis"])
@@ -113,7 +113,7 @@ def record_while_held(stream, key="space") -> np.ndarray | None:
 
 def chat_loop():
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-    print("JARVIS online. Say 'hey jarvis' or hold SPACE to talk. Ctrl+C to quit.")
+    print("ARIA online. Say 'hey jarvis' or hold SPACE to talk. Ctrl+C to quit.")
 
     stream = sd.InputStream(samplerate=SAMPLE_RATE, channels=1, dtype="int16", blocksize=CHUNK)
     stream.start()
@@ -159,9 +159,9 @@ def chat_loop():
             else:
                 print("[no tool called this turn]")
 
-            print(f"JARVIS: {msg['content']}")
+            print(f"ARIA: {msg['content']}")
 
-            # Pause the mic during playback so JARVIS doesn't hear itself
+            # Pause the mic during playback so ARIA doesn't hear itself
             # and re-trigger the wake word off its own voice.
             stream.stop()
             speak(msg["content"])

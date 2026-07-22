@@ -30,11 +30,11 @@ import shutil
 import ollama
 from faster_whisper import WhisperModel
 
-from Jarvis_1 import TOOLS, run_tool_call, SYSTEM_PROMPT, MODEL
+from ARIA_1 import TOOLS, run_tool_call, SYSTEM_PROMPT, MODEL
 
 SAMPLE_RATE = 16000
 PIPER_VOICE = "en_US-sam-medium"   # swap for whichever voice you picked
-PIPER_OUT = "jarvis_reply.wav"
+PIPER_OUT = "aria_reply.wav"
 
 print("Loading speech-to-text model...")
 stt_model = WhisperModel("large-v3-turbo", device="cuda", compute_type="float16")
@@ -88,7 +88,7 @@ def speak(text: str):
 
 def chat_loop():
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-    print("JARVIS online. Hold SPACE to talk, Ctrl+C to quit.")
+    print("ARIA online. Hold SPACE to talk, Ctrl+C to quit.")
 
     while True:
         audio = record_while_held()
@@ -113,7 +113,7 @@ def chat_loop():
             msg = response["message"]
             messages.append(msg)
 
-        print(f"JARVIS: {msg['content']}")
+        print(f"ARIA: {msg['content']}")
         speak(msg["content"])
 
 

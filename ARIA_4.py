@@ -1,12 +1,12 @@
 """
-Jarvis_4.py  —  Phase 5 + 6 integration
+ARIA_4.py  —  Phase 5 + 6 integration
 ========================================
-Extends Jarvis_3 with:
+Extends ARIA_3 with:
   • Phase 5: Coding assistant tools (read file, explain, refactor, diagnose)
   • Phase 6: ChromaDB memory (remember facts, recall across sessions, personality)
 
-Run this file exactly like Jarvis_3.py:
-    python Jarvis_4.py
+Run this file exactly like ARIA_3.py:
+    python ARIA_4.py
 
 Nothing else to start — ChromaDB is fully embedded (no server needed).
 
@@ -54,15 +54,15 @@ from faster_whisper import WhisperModel
 from openwakeword.model import Model as WakeWordModel
 
 # ── Tool layers ──────────────────────────────────────────────────────────────
-from Jarvis_1 import (
+from ARIA_1 import (
     TOOLS as BASE_TOOLS,
     TOOL_IMPLEMENTATIONS as BASE_IMPLS,
     run_tool_call as _base_run_tool_call,
     to_assistant_message,
     MODEL,
 )
-from Jarvis_tools_coding import CODING_TOOLS, CODING_TOOL_IMPLEMENTATIONS
-from Jarvis_tools_memory import (
+from ARIA_tools_coding import CODING_TOOLS, CODING_TOOL_IMPLEMENTATIONS
+from ARIA_tools_memory import (
     MEMORY_TOOLS,
     MEMORY_TOOL_IMPLEMENTATIONS,
     build_initial_messages,
@@ -93,7 +93,7 @@ MAX_SILENCE_CHUNKS       = 25            # ~2 s of quiet ends the command
 MAX_COMMAND_CHUNKS       = 150           # ~12 s hard cap
 
 PIPER_VOICE = "en_US-sam-medium"
-PIPER_OUT   = "jarvis_reply.wav"
+PIPER_OUT   = "aria_reply.wav"
 
 # ── Model loading ─────────────────────────────────────────────────────────────
 print("Loading wake word model...")

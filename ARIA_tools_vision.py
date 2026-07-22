@@ -1,5 +1,5 @@
 """
-Jarvis_tools_vision.py  —  Phase 8: Screen Awareness
+ARIA_tools_vision.py  —  Phase 8: Screen Awareness
 
 Tools:
     analyze_screen(question)          — Full screenshot + VLM analysis

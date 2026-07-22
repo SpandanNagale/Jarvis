@@ -1,13 +1,13 @@
 """
-Jarvis_tools_memory.py  —  Phase 6: Memory + Personality (ChromaDB)
+ARIA_tools_memory.py  —  Phase 6: Memory + Personality (ChromaDB)
 
-Provides a lightweight persistent memory layer on top of ChromaDB so JARVIS
+Provides a lightweight persistent memory layer on top of ChromaDB so ARIA
 can remember facts, past corrections, and recurring context across restarts.
 
 Two public surfaces
 -------------------
 1.  Tool implementations (MEMORY_TOOL_IMPLEMENTATIONS / MEMORY_TOOLS)
-    Jarvis_4 merges these into the global tool registry so the LLM can call
+    ARIA_4 merges these into the global tool registry so the LLM can call
     them from any turn:
 
         remember_fact(fact)           — persist a free-text fact
@@ -15,7 +15,7 @@ Two public surfaces
         forget_fact(fact_id)          — delete by ChromaDB document ID
         list_facts()                  — dump all stored facts (up to 20)
 
-2.  Session-history persistence helpers (called directly by Jarvis_4)
+2.  Session-history persistence helpers (called directly by ARIA_4)
         save_messages(msgs)           — snapshot the current message list
         load_messages()               — restore the last session's history
         build_initial_messages()      — build the messages[] list for a new
@@ -31,8 +31,8 @@ Design notes
   needed; it runs fine on CPU for these small payloads.
 * History is limited to the last MAX_HISTORY_TURNS pairs to keep token counts
   reasonable on restart.
-* The SYSTEM_PROMPT here is the Phase 6 personality-tuned version; Jarvis_4
-  imports it instead of the plain one in Jarvis_1.
+* The SYSTEM_PROMPT here is the Phase 6 personality-tuned version; ARIA_4
+  imports it instead of the plain one in ARIA_1.
 """
 
 import json
@@ -47,6 +47,8 @@ from pathlib import Path
 
 _DB_PATH = str(Path(__file__).parent / "memory")
 _client = chromadb.PersistentClient(path=_DB_PATH)
+# Collection names kept as "jarvis_*" (not renamed to "aria_*") so existing
+# stored facts/history aren't orphaned under a new collection name.
 _facts_col = _client.get_or_create_collection("jarvis_facts")
 _history_col = _client.get_or_create_collection("jarvis_history")
 
@@ -58,7 +60,7 @@ MAX_HISTORY_TURNS  = 10   # pairs of user+assistant messages kept across restart
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT_V2 = (
-    "You are JARVIS, a sharp and slightly dry-humoured AI assistant running "
+    "You are ARIA, a sharp and slightly dry-humoured AI assistant running "
     "entirely on the user's local PC. You have a consistent personality: "
     "efficient, direct, occasionally witty — but never sycophantic. "
     "You remember facts the user has told you and refer back to them naturally "
@@ -107,7 +109,7 @@ def recall_facts(query: str) -> str:
 def forget_fact(fact_id: str) -> str:
     """Delete a specific fact by its ChromaDB document ID."""
     # The LLM usually won't know raw IDs — this is mostly for 'forget everything
-    # you know about X' flows where Jarvis first does a recall then deletes.
+    # you know about X' flows where ARIA first does a recall then deletes.
     try:
         _facts_col.delete(ids=[fact_id])
         return f"Memory {fact_id} deleted."
@@ -129,7 +131,7 @@ def list_facts() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Session-history helpers  (called by Jarvis_4, not exposed as LLM tools)
+# Session-history helpers  (called by ARIA_4, not exposed as LLM tools)
 # ---------------------------------------------------------------------------
 
 def save_messages(messages: list[dict]):
@@ -232,7 +234,7 @@ MEMORY_TOOLS = [
         "function": {
             "name": "remember_fact",
             "description": (
-                "Persistently store a fact the user wants JARVIS to remember "
+                "Persistently store a fact the user wants ARIA to remember "
                 "across sessions — e.g. preferences, names, routines."
             ),
             "parameters": {
@@ -252,7 +254,7 @@ MEMORY_TOOLS = [
         "function": {
             "name": "recall_facts",
             "description": (
-                "Search JARVIS's memory for facts relevant to the given query."
+                "Search ARIA's memory for facts relevant to the given query."
             ),
             "parameters": {
                 "type": "object",
@@ -290,7 +292,7 @@ MEMORY_TOOLS = [
         "type": "function",
         "function": {
             "name": "list_facts",
-            "description": "List all facts stored in JARVIS's memory.",
+            "description": "List all facts stored in ARIA's memory.",
             "parameters": {"type": "object", "properties": {}},
         },
     },

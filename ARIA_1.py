@@ -10,7 +10,7 @@ import pygetwindow as gw
 MODEL = "qwen3:14b"
 
 SYSTEM_PROMPT = (
-    "You are JARVIS, a concise AI assistant running locally on the user's PC. "
+    "You are ARIA, a concise AI assistant running locally on the user's PC. "
     "Use the available tools whenever the user asks about system status, the "
     "time, or wants to open/close an app, adjust volume or brightness, open a "
     "website, check open windows, or lock the PC. Never claim you performed an "
@@ -264,7 +264,7 @@ def to_assistant_message(msg) -> dict:
 
 def chat_loop():
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-    print("JARVIS online. Type 'quit' to exit.\n")
+    print("ARIA online. Type 'quit' to exit.\n")
 
     while True:
         user_input = input("You: ").strip()
@@ -291,7 +291,7 @@ def chat_loop():
         else:
             print("[no tool called this turn]")
 
-        print(f"JARVIS: {msg['content']}\n")
+        print(f"ARIA: {msg['content']}\n")
 
 
 if __name__ == "__main__":
