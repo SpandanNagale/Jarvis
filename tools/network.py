@@ -1,5 +1,5 @@
 """
-ARIA_tools_network.py  —  Phase 7: Intelligence + Network Access
+tools/network.py  —  Network Access Tools
 
 Tools:
     web_search(query)              — DuckDuckGo search (no API key needed)

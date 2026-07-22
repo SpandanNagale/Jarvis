@@ -1,5 +1,5 @@
 """
-ARIA_tools_coding.py  —  Phase 5: Coding Assistant Tools
+tools/coding.py  —  Coding Assistant Tools
 
 Provides tool implementations that work on files by partial name, folder hint,
 full path, or clipboard — without any vision / OCR involvement:
@@ -24,7 +24,7 @@ Design notes
 * Ollama calls here use the SAME model as the main chat but WITHOUT the tool
   schema so the model returns plain prose, not tool calls.
 * Each tool returns a concise plain-English result string — same contract as
-  the other tools — so run_tool_call() in ARIA_4 needs no changes.
+  the other tools — so run_tool_call() in aria.py needs no changes.
 """
 
 import os
@@ -33,7 +33,7 @@ import ollama
 import pyperclip
 from pathlib import Path
 
-from ARIA_1 import MODEL
+from config import MODEL
 
 # ---------------------------------------------------------------------------
 # Search roots — folders ARIA will look inside (non-recursive at depth 1
@@ -391,7 +391,7 @@ CODING_TOOLS = [
             "description": (
                 "Explain what a file's content does in plain English. "
                 "Accepts a full path, a partial filename with optional folder hint "
-                "(e.g. 'ARIA_4.py in my project'), or 'clipboard'."
+                "(e.g. 'aria.py in my project'), or 'clipboard'."
             ),
             "parameters": {
                 "type": "object",

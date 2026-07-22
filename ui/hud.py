@@ -1,11 +1,11 @@
 """
-ARIA_hud.py  —  Always-on-top visual overlay for ARIA
+ui/hud.py  —  Always-on-top visual overlay for ARIA
 
 A small, borderless, translucent corner window showing the assistant's
 current state (idle / listening / thinking / speaking) plus the transcript
 and reply text, updated as soon as each becomes available.
 
-Qt must own the main thread on Windows, so ARIA_5.py runs its voice loop on
+Qt must own the main thread on Windows, so aria.py runs its voice loop on
 a background thread and posts state updates here through HUD_QUEUE; a QTimer
 on the GUI thread drains it every TICK_MS and repaints. See push() below.
 
@@ -15,7 +15,7 @@ Controls
     Left-click + drag      reposition
     Mouse wheel over it    resize (bounded)
 
-Run standalone for a preview of all four states: python ARIA_hud.py
+Run standalone for a preview of all four states: python ui/hud.py
 """
 
 import math

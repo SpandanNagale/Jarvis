@@ -1,5 +1,5 @@
 """
-ARIA_tools_memory.py  —  Phase 6: Memory + Personality (ChromaDB)
+tools/memory.py  —  Memory + Personality (ChromaDB)
 
 Provides a lightweight persistent memory layer on top of ChromaDB so ARIA
 can remember facts, past corrections, and recurring context across restarts.
@@ -7,7 +7,7 @@ can remember facts, past corrections, and recurring context across restarts.
 Two public surfaces
 -------------------
 1.  Tool implementations (MEMORY_TOOL_IMPLEMENTATIONS / MEMORY_TOOLS)
-    ARIA_4 merges these into the global tool registry so the LLM can call
+    aria.py merges these into the global tool registry so the LLM can call
     them from any turn:
 
         remember_fact(fact)           — persist a free-text fact
@@ -15,7 +15,7 @@ Two public surfaces
         forget_fact(fact_id)          — delete by ChromaDB document ID
         list_facts()                  — dump all stored facts (up to 20)
 
-2.  Session-history persistence helpers (called directly by ARIA_4)
+2.  Session-history persistence helpers (called directly by aria.py)
         save_messages(msgs)           — snapshot the current message list
         load_messages()               — restore the last session's history
         build_initial_messages()      — build the messages[] list for a new
@@ -31,8 +31,7 @@ Design notes
   needed; it runs fine on CPU for these small payloads.
 * History is limited to the last MAX_HISTORY_TURNS pairs to keep token counts
   reasonable on restart.
-* The SYSTEM_PROMPT here is the Phase 6 personality-tuned version; ARIA_4
-  imports it instead of the plain one in ARIA_1.
+* The SYSTEM_PROMPT here is the personality-tuned version used by aria.py.
 """
 
 import json
@@ -131,7 +130,7 @@ def list_facts() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Session-history helpers  (called by ARIA_4, not exposed as LLM tools)
+# Session-history helpers  (called by aria.py, not exposed as LLM tools)
 # ---------------------------------------------------------------------------
 
 def save_messages(messages: list[dict]):

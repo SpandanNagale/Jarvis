@@ -1,7 +1,7 @@
 """
-ARIA_tts.py  —  XTTS-v2 voice output with layered fallback
+voice/tts.py  —  XTTS-v2 voice output with layered fallback
 
-Drop-in replacement for the Piper-based speak(text) in ARIA_5.py. Given the
+Drop-in replacement for the Piper-based speak(text) in aria.py. Given the
 RTX 5070's 12GB VRAM is nearly full once Ollama (qwen3:14b) and faster-whisper
 are both resident, synthesis is attempted in this order on every call:
 
@@ -17,9 +17,9 @@ Voice cloning: drop a 6-10s mono WAV of a single speaker, minimal background
 noise, at REFERENCE_VOICE_WAV (defaults to "reference.wav" in the project
 root). If that file isn't present, a built-in XTTS speaker is used instead.
 
-Ollama model name for the unload step is configurable — ARIA_5.py sets
-ARIA_tts.OLLAMA_MODEL to whatever MODEL it's using, since ARIA_tts can't
-import that back (ARIA_5 imports this module, not the other way around).
+Ollama model name for the unload step is configurable — aria.py sets
+tts.OLLAMA_MODEL to whatever MODEL it's using, since this module can't
+import that back (aria.py imports this module, not the other way around).
 """
 
 import os
@@ -43,7 +43,7 @@ os.environ.setdefault("COQUI_TOS_AGREED", "1")  # skip interactive license promp
 
 # ---------------------------------------------------------------------------
 # XTTS engine — loaded once at import time, same pattern as the wake word /
-# whisper models in ARIA_5.py. If loading fails, we fall back to Piper for
+# whisper models in aria.py. If loading fails, we fall back to Piper for
 # the whole session and never touch XTTS again.
 # ---------------------------------------------------------------------------
 

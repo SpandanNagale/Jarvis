@@ -1,5 +1,5 @@
 """
-ARIA_tools_vision.py  —  Phase 8: Screen Awareness
+tools/vision.py  —  Screen Awareness Tools
 
 Tools:
     analyze_screen(question)          — Full screenshot + VLM analysis

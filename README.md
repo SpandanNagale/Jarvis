@@ -20,7 +20,7 @@
 > **Note on the wake word:** the activation phrase is currently still **"Hey Jarvis"** — a
 > custom "Hey Aria" openWakeWord model is being trained separately (see
 > [`wakeword_training/`](wakeword_training/)). Once that model is ready, swap
-> `WAKE_WORD_MODEL_NAME` in `ARIA_5.py` to `"hey_aria"` and drop the trained model file in.
+> `WAKE_WORD_MODEL_NAME` in `aria.py` to `"hey_aria"` and drop the trained model file in.
 > Everything else (persona, replies, HUD) already says ARIA.
 
 ---
@@ -29,30 +29,30 @@
 
 ```
 ARIA/
-├── ARIA_1.py                  # Core tools: system control + base tool schemas
-├── ARIA_2.py                  # Phase 2: voice pipeline (STT + TTS + wake word)
-├── ARIA_3.py                  # Phase 3: push-to-talk + improved audio handling
-├── ARIA_4.py                  # Phase 4: coding tools + memory integration
-├── ARIA_5.py                  # Phase 5+ (latest): Qwen3 thinking + network + vision
-├── ARIA_tools_coding.py       # Coding tools (find file, explain, refactor, debug)
-├── ARIA_tools_memory.py       # ChromaDB memory layer + session persistence
-├── ARIA_tools_network.py      # Web search, fetch page, GitHub, Wikipedia
-├── ARIA_tools_vision.py       # Screenshot analysis via a vision model
-├── ARIA_tts.py                # XTTS-v2 voice output, with layered GPU/CPU/Piper fallback
-├── ARIA_hud.py                # Always-on-top HUD overlay (PySide6)
+├── aria.py                    # Main entry point — run this
+├── config.py                  # Shared constants (Ollama model name)
+├── tools/                     # LLM-callable tool modules
+│   ├── coding.py               # Find file, explain, refactor, diagnose traceback
+│   ├── memory.py               # ChromaDB memory layer + session persistence
+│   ├── network.py              # Web search, fetch page, GitHub, Wikipedia
+│   └── vision.py               # Screenshot analysis via a vision model
+├── voice/
+│   └── tts.py                  # XTTS-v2 voice output, layered GPU/CPU/Piper fallback
+├── ui/
+│   └── hud.py                  # Always-on-top HUD overlay (PySide6)
 ├── wake_debug.py              # Utility to debug wake word detection scores
 ├── requirements.txt           # Python dependencies
 └── memory/                    # ChromaDB storage (auto-created, gitignored)
 ```
 
-> **`ARIA_5.py` is the main entry point** — it builds on all previous phases.
+> **`aria.py` is the only file you run.**
 
 ---
 
 ## ⚙️ Requirements
 
 ### Hardware
-- **GPU**: NVIDIA GPU with CUDA support — recommended for faster-whisper `large-v3-turbo` and XTTS-v2. This project is tuned for a 12GB-class card (RTX 5070); XTTS's GPU fallback chain (see `ARIA_tts.py`) exists because VRAM gets tight once Ollama's model is also resident.
+- **GPU**: NVIDIA GPU with CUDA support — recommended for faster-whisper `large-v3-turbo` and XTTS-v2. This project is tuned for a 12GB-class card (RTX 5070); XTTS's GPU fallback chain (see `voice/tts.py`) exists because VRAM gets tight once Ollama's model is also resident.
 - **RAM**: 16 GB+ recommended (Qwen3:14b needs ~10 GB VRAM)
 - **Microphone**: Any standard microphone
 
@@ -110,7 +110,7 @@ XTTS-v2's weights (~1.8GB) download automatically on first run — no manual ste
 
 - **Default voice** (no setup): just run the project, XTTS uses a built-in speaker.
 - **Voice cloning**: record a 6–10 second, single-speaker, quiet-room WAV sample, save it as
-  `reference.wav` in the project root. `ARIA_tts.py` will use it automatically if present.
+  `reference.wav` in the project root. `voice/tts.py` will use it automatically if present.
 
 Piper remains as the automatic fallback if XTTS fails to load or errors mid-session — download
 the `en_US-sam-medium` voice and place both files in the project root:
@@ -137,7 +137,7 @@ export GITHUB_TOKEN="your_token_here"
 ## ▶️ Running ARIA
 
 ```bash
-python ARIA_5.py
+python aria.py
 ```
 
 ARIA will load the wake word model, STT model, and XTTS-v2, then open the HUD overlay and start listening.
@@ -167,7 +167,7 @@ Press `Ctrl+C` to quit.
 "Hey Jarvis, what is RAG in AI?"
 "Hey Jarvis, search me on GitHub."
 "Hey Jarvis, find repos for LangChain."
-"Hey Jarvis, explain my ARIA_5.py file."
+"Hey Jarvis, explain my aria.py file."
 "Hey Jarvis, remember that I prefer dark mode."
 "Hey Jarvis, what do you know about me?"
 "Hey Jarvis, what's on my screen?"
@@ -185,7 +185,7 @@ openWakeWord ──► wake detected?
     │                  │
     │           faster-whisper (STT)
     │                  │
-    │           User text ──────────────► ARIA_hud (live transcript)
+    │           User text ──────────────► ui.hud (live transcript)
     │                  │
     │           should_think()?
     │            /think or /no_think
@@ -194,15 +194,15 @@ openWakeWord ──► wake detected?
     │                  │
     │           Tool calls?──► Tool implementations
     │                  │          (system / coding / memory / network / vision)
-    │           Final reply ────────────► ARIA_hud (live reply + state)
+    │           Final reply ────────────► ui.hud (live reply + state)
     │                  │
     ▼         XTTS-v2 (GPU→CPU→Piper fallback) ──► Audio playback
 ChromaDB ◄──── save_messages()
 (memory)
 ```
 
-The voice loop (`ARIA_5.py`'s `chat_loop`) runs on a background thread; the HUD's Qt event loop
-owns the main thread. State updates flow one-way through a thread-safe queue (`ARIA_hud.push(...)`).
+The voice loop (`aria.py`'s `chat_loop`) runs on a background thread; the HUD's Qt event loop
+owns the main thread. State updates flow one-way through a thread-safe queue (`ui.hud.push(...)`).
 
 ---
 
