@@ -10,9 +10,10 @@ listening / thinking / speaking) plus transcript/reply text (see ui/hud.py).
 Qt must own the main thread on Windows, so the voice loop below runs on a
 background thread; see __main__ at the bottom of this file.
 
-Wake word: still "hey jarvis" (see WAKE_WORD_MODEL_NAME below) — a custom
-"hey aria" openWakeWord model is being trained separately (see
-wakeword_training/); swap the constant once that model file exists.
+Wake word: "hey aria", via a custom openWakeWord model (hey_aria.onnx) trained
+on synthetic TTS data + real-world negative audio (see WAKE_WORD_MODEL_PATH
+below). This is a fast first-pass model, not a heavily-tuned one — see the
+WAKE_THRESHOLD comment below for the accuracy/false-positive tradeoff.
 
 Tool categories
 ----------------
@@ -24,11 +25,11 @@ Tool categories
 
 Voice commands
 --------------
-  "Hey Jarvis, what time is it?"
-  "Hey Jarvis, open notepad."
-  "Hey Jarvis, remember that I prefer dark mode."
-  "Hey Jarvis, search me on GitHub."
-  "Hey Jarvis, what's on my screen?"
+  "Hey Aria, what time is it?"
+  "Hey Aria, open notepad."
+  "Hey Aria, remember that I prefer dark mode."
+  "Hey Aria, search me on GitHub."
+  "Hey Aria, what's on my screen?"
 
 Run:
     python aria.py
@@ -42,6 +43,7 @@ import webbrowser
 import atexit
 import threading
 from datetime import datetime
+from pathlib import Path
 
 if sys.platform == "win32":
     try:
@@ -395,21 +397,26 @@ def strip_think_block(text: str) -> str:
 
 SAMPLE_RATE              = 16000
 CHUNK                    = 1280
-WAKE_THRESHOLD           = 0.30
+# Raised from the 0.30 used for "hey jarvis" — this first-pass "hey aria"
+# model has a much higher false-positive rate at low thresholds (trained on
+# a reduced dataset for a fast turnaround); tune down if it feels sluggish
+# to trigger, or retrain with more data if false positives are still common.
+WAKE_THRESHOLD           = 0.6
 SILENCE_RMS              = 300
 SPEECH_START_TIMEOUT_CHUNKS = 40
 MAX_SILENCE_CHUNKS       = 25
 MAX_COMMAND_CHUNKS       = 150
 
-# Swap to "hey_aria" (and drop the trained model file in) once the custom
-# wake word model finishes training — see wakeword_training/.
-WAKE_WORD_MODEL_NAME = "hey_jarvis"
-WAKE_WORD_PHRASE     = "hey jarvis"
+# Custom-trained model (see hey_aria.onnx in the project root). The score
+# lookup key openWakeWord uses is the file's stem, i.e. "hey_aria".
+WAKE_WORD_MODEL_PATH = str(Path(__file__).parent / "hey_aria.onnx")
+WAKE_WORD_MODEL_NAME = "hey_aria"
+WAKE_WORD_PHRASE     = "hey aria"
 
 # ── Model loading ─────────────────────────────────────────────────────────────
 
 print("Loading wake word model...")
-wake_model = WakeWordModel(wakeword_models=[WAKE_WORD_MODEL_NAME])
+wake_model = WakeWordModel(wakeword_models=[WAKE_WORD_MODEL_PATH])
 
 print("Loading speech-to-text model...")
 stt_model = WhisperModel("large-v3-turbo", device="cuda", compute_type="float16")

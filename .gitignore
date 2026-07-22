@@ -27,6 +27,9 @@ build/
 # Piper TTS voice model (60 MB+) — download separately
 *.onnx
 *.onnx.json
+# ...except the small custom-trained "hey aria" wake word model (~215 KB total)
+!hey_aria.onnx
+!hey_aria.onnx.data
 
 # ── Audio output files ────────────────────────────────────────────────────────
 # Generated at runtime by Piper TTS and STT

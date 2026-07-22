@@ -8,7 +8,7 @@
 
 | Category | Capability |
 |---|---|
-| 🎙️ **Voice** | "Hey Jarvis" wake word · hold-Space push-to-talk · XTTS-v2 natural voice (voice cloning supported) with Piper fallback |
+| 🎙️ **Voice** | "Hey Aria" wake word · hold-Space push-to-talk · XTTS-v2 natural voice (voice cloning supported) with Piper fallback |
 | 🖥️ **HUD** | Always-on-top overlay — idle / listening / thinking / speaking states, live transcript + reply text |
 | 🧠 **AI** | Qwen3:14b via Ollama · adaptive chain-of-thought (`/think` / `/no_think`) |
 | 🖥️ **System Control** | Open/close apps · volume · brightness · lock PC · list windows |
@@ -17,11 +17,14 @@
 | 💾 **Memory** | ChromaDB-backed persistent facts · cross-session conversation history |
 | 🛠️ **Coding** | Fuzzy file finder · code reader · explain code · refactor suggestions · traceback diagnosis |
 
-> **Note on the wake word:** the activation phrase is currently still **"Hey Jarvis"** — a
-> custom "Hey Aria" openWakeWord model is being trained separately (see
-> [`wakeword_training/`](wakeword_training/)). Once that model is ready, swap
-> `WAKE_WORD_MODEL_NAME` in `aria.py` to `"hey_aria"` and drop the trained model file in.
-> Everything else (persona, replies, HUD) already says ARIA.
+> **Note on the wake word:** `hey_aria.onnx` is a custom openWakeWord model trained
+> (via [openWakeWord's training pipeline](https://github.com/dscripka/openWakeWord))
+> on synthetic TTS speech + real-world negative audio in a separate Linux/WSL environment
+> (not part of this repo). It's a fast first-pass model rather than a heavily-tuned one —
+> `WAKE_THRESHOLD` in `aria.py` is set conservatively (`0.6`) to keep false triggers down,
+> at some cost to recall. If it feels sluggish to trigger, lower the threshold; if it fires
+> on unrelated speech, raise it. Retraining with a larger synthetic dataset (more samples
+> per phrase, more negative audio) would improve both.
 
 ---
 
@@ -40,6 +43,7 @@ ARIA/
 │   └── tts.py                  # XTTS-v2 voice output, layered GPU/CPU/Piper fallback
 ├── ui/
 │   └── hud.py                  # Always-on-top HUD overlay (PySide6)
+├── hey_aria.onnx               # Custom-trained wake word model + hey_aria.onnx.data
 ├── wake_debug.py              # Utility to debug wake word detection scores
 ├── requirements.txt           # Python dependencies
 └── memory/                    # ChromaDB storage (auto-created, gitignored)
@@ -143,7 +147,7 @@ python aria.py
 ARIA will load the wake word model, STT model, and XTTS-v2, then open the HUD overlay and start listening.
 
 **Activation modes:**
-- Say **"Hey Jarvis"** → auto-detects and starts recording your command
+- Say **"Hey Aria"** → auto-detects and starts recording your command
 - Hold **Spacebar** → push-to-talk mode
 
 **HUD controls:**
@@ -158,19 +162,19 @@ Press `Ctrl+C` to quit.
 ## 🗣️ Example Commands
 
 ```
-"Hey Jarvis, what time is it?"
-"Hey Jarvis, open notepad."
-"Hey Jarvis, set volume to 50."
-"Hey Jarvis, set brightness to 80."
-"Hey Jarvis, lock the PC."
-"Hey Jarvis, search for Python async tutorials."
-"Hey Jarvis, what is RAG in AI?"
-"Hey Jarvis, search me on GitHub."
-"Hey Jarvis, find repos for LangChain."
-"Hey Jarvis, explain my aria.py file."
-"Hey Jarvis, remember that I prefer dark mode."
-"Hey Jarvis, what do you know about me?"
-"Hey Jarvis, what's on my screen?"
+"Hey Aria, what time is it?"
+"Hey Aria, open notepad."
+"Hey Aria, set volume to 50."
+"Hey Aria, set brightness to 80."
+"Hey Aria, lock the PC."
+"Hey Aria, search for Python async tutorials."
+"Hey Aria, what is RAG in AI?"
+"Hey Aria, search me on GitHub."
+"Hey Aria, find repos for LangChain."
+"Hey Aria, explain my aria.py file."
+"Hey Aria, remember that I prefer dark mode."
+"Hey Aria, what do you know about me?"
+"Hey Aria, what's on my screen?"
 ```
 
 ---
@@ -212,7 +216,7 @@ owns the main thread. State updates flow one-way through a thread-safe queue (`u
 |---|---|
 | `ollama` | Local LLM inference via Ollama |
 | `faster-whisper` | GPU-accelerated speech-to-text |
-| `openwakeword` | "Hey Jarvis" wake word detection |
+| `openwakeword` | "Hey Aria" wake word detection |
 | `coqui-tts` | XTTS-v2 text-to-speech (natural voice, cloning support) |
 | `piper-tts` | Offline text-to-speech (fallback voice) |
 | `torch` / `torchaudio` / `torchcodec` | GPU inference backend for XTTS-v2 |
